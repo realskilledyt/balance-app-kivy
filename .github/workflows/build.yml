@@ -4,42 +4,55 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-apk:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Install system packages
-      run: |
-        sudo apt update
-        sudo apt install -y python3-setuptools python3-pip \
-        git zip unzip openjdk-17-jdk \
-        libffi-dev libssl-dev build-essential \
-        libgles2-mesa-dev libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
-        libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev
+      - name: Install system dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y \
+            openjdk-17-jdk wget unzip git python3-setuptools python3-pip \
+            build-essential libffi-dev libssl-dev \
+            libegl1-mesa libgles2-mesa-dev \
+            libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
+            libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev
 
-    - name: Install buildozer & cython
-      run: |
-        pip install --upgrade pip
-        pip install buildozer Cython==0.29.33
+      - name: Install Buildozer & Cython
+        run: |
+          python3 -m pip install --upgrade pip
+          pip install buildozer Cython==0.29.33
 
-    - name: Install Android SDK & Build Tools
-      run: |
-        yes | sdkmanager --licenses || true
-        sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.2" "ndk;25.2.9519653"
+      - name: Install Android SDK command line tools
+        run: |
+          mkdir -p $HOME/android-sdk/cmdline-tools
+          cd $HOME/android-sdk/cmdline-tools
+          wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
+          unzip -q commandlinetools-linux-9477386_latest.zip
+          mv cmdline-tools latest
 
-    - name: Build APK
-      env:
-        ANDROIDSDK: $HOME/.buildozer/android/platform/android-sdk
-        ANDROIDNDK: $HOME/.buildozer/android/platform/android-ndk
-      run: |
-        buildozer android debug --verbose
+      - name: Set ANDROID_HOME path
+        run: |
+          echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
+          echo "PATH=$PATH:$HOME/android-sdk/cmdline-tools/latest/bin:$HOME/android-sdk/platform-tools" >> $GITHUB_ENV
 
-    - name: Upload APK artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: balanceapp-apk
-        path: bin/*.apk
+      - name: Install Android SDK packages
+        run: |
+          yes | sdkmanager --sdk_root=$HOME/android-sdk --licenses || true
+          sdkmanager --sdk_root=$HOME/android-sdk "platform-tools" "platforms;android-33" "build-tools;33.0.2" "ndk;25.2.9519653"
 
+      - name: Build APK
+        env:
+          ANDROIDSDK: $HOME/android-sdk
+          ANDROIDNDK: $HOME/android-sdk/ndk/25.2.9519653
+        run: |
+          buildozer android debug --verbose
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: balanceapp
+          path: bin/*.apk
