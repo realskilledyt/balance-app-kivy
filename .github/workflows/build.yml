@@ -5,28 +5,35 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        os: [ubuntu-22.04]
+    runs-on: ${{ matrix.os }}
 
     steps:
     - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Install system dependencies
+    - name: Update & Install dependencies
       run: |
         sudo apt update
         sudo apt install -y \
           openjdk-17-jdk wget unzip git python3-setuptools python3-pip \
-          build-essential libffi-dev libssl-dev \
-          libegl1-mesa-dev libgles2-mesa-dev libgl1-mesa-dev \
+          build-essential libffi-dev libssl-dev zlib1g-dev \
+          libgl1-mesa-dev libgles2-mesa-dev libegl1-mesa-dev \
           libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
-          libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev
+          libportmidi-dev libavformat-dev libavcodec-dev libswscale-dev
 
-    - name: Install Buildozer & Cython
+        # Fallback for Ubuntu 24.04 if needed
+        sudo apt install -y libopengl-dev || true
+        sudo apt install -y mesa-common-dev || true
+
+    - name: Install buildozer & cython
       run: |
-        python3 -m pip install --upgrade pip
+        pip install --upgrade pip
         pip install buildozer Cython==0.29.33
 
-    - name: Install Android SDK command line tools
+    - name: Install Android SDK cmdline tools
       run: |
         mkdir -p $HOME/android-sdk/cmdline-tools
         cd $HOME/android-sdk/cmdline-tools
@@ -34,14 +41,14 @@ jobs:
         unzip -q commandlinetools-linux-9477386_latest.zip
         mv cmdline-tools latest
 
-    - name: Set ANDROID_HOME path
+    - name: Export ANDROID paths
       run: |
         echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
         echo "PATH=$PATH:$HOME/android-sdk/cmdline-tools/latest/bin:$HOME/android-sdk/platform-tools" >> $GITHUB_ENV
 
     - name: Install Android SDK packages
       run: |
-        yes | sdkmanager --sdk_root=$HOME/android-sdk --licenses || true
+        yes | sdkmanager --licenses || true
         sdkmanager --sdk_root=$HOME/android-sdk \
           "platform-tools" \
           "platforms;android-33" \
@@ -55,7 +62,7 @@ jobs:
       run: |
         buildozer android debug --verbose
 
-    - name: Upload APK
+    - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
         name: balanceapp
