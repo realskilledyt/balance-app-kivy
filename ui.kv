@@ -1,0 +1,206 @@
+#:kivy 2.3.0
+
+<GlassCard@BoxLayout>:
+    size_hint_y: None
+    height: dp(180)
+    padding: dp(18)
+    orientation: "vertical"
+    canvas.before:
+        Color:
+            rgba: 0.8, 0.5, 1, 1
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [28]
+        Color:
+            rgba: 1,1,1,0.15
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [28]
+
+<PrimaryButton@Button>:
+    size_hint: None, None
+    size: dp(160), dp(50)
+    font_size: dp(18)
+    bold: True
+    background_normal: ""
+    background_color: 0,0,0,0
+    color: 1,1,1,1
+    canvas.before:
+        Color:
+            rgba: root.bg if hasattr(root, "bg") else (0.2,0.2,0.2,1)
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [25]
+
+<IconButton@Button>:
+    size_hint: None, None
+    size: dp(45), dp(45)
+    background_normal: ""
+    background_color: 0,0,0,0
+    text: "🔍"
+    font_size: dp(22)
+    color: 1,1,1,1
+
+<LogItem@BoxLayout>:
+    size_hint_y: None
+    height: dp(75)
+    padding: dp(16)
+    spacing: dp(6)
+    canvas.before:
+        Color:
+            rgba: 0.09,0.07,0.12,1
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [20]
+    BoxLayout:
+        orientation: "vertical"
+        Label:
+            text: root.title
+            font_size: dp(16)
+            color: 1,1,1,1
+            halign:"left"
+            valign:"middle"
+            text_size:self.size
+        Label:
+            text: root.date
+            font_size: dp(12)
+            color: (.6,.6,.6,1)
+            halign:"left"
+            valign:"middle"
+            text_size:self.size
+
+    Label:
+        text: root.change
+        font_size: dp(18)
+        color: (0,1,0,1) if "+" in root.change else (1,0,0,1)
+        size_hint_x: None
+        width: dp(80)
+        halign: "right"
+        valign: "middle"
+        text_size: self.size
+
+<LoginScreen>:
+    name: "login"
+    canvas.before:
+        Color:
+            rgba: 0.06,0.04,0.10,1
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+    BoxLayout:
+        orientation: "vertical"
+        spacing: dp(20)
+        padding: dp(40)
+
+        Label:
+            text: "Balance App"
+            font_size: dp(30)
+            color: 1,1,1,1
+            size_hint_y: None
+            height: dp(60)
+
+        TextInput:
+            id: user_field
+            hint_text: "Username"
+            background_color: 0.09,0.06,0.14,1
+            foreground_color: 1,1,1,1
+            size_hint_y: None
+            height: dp(55)
+            padding: dp(12)
+
+        TextInput:
+            id: pass_field
+            hint_text: "Password"
+            password: True
+            background_color: 0.09,0.06,0.14,1
+            foreground_color: 1,1,1,1
+            size_hint_y: None
+            height: dp(55)
+            padding: dp(12)
+
+        Label:
+            id: error_label
+            text: ""
+            color: 1,0.2,0.2,1
+            font_size: dp(14)
+
+        PrimaryButton:
+            text: "Sign In"
+            bg: (0.4,0.2,1,1)
+            pos_hint: {"center_x": .5}
+            on_release: root.do_login()
+
+<DashboardScreen>:
+    name: "dash"
+    canvas.before:
+        Color:
+            rgba: 0.06,0.04,0.10,1
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+    BoxLayout:
+        orientation: "vertical"
+        spacing: dp(15)
+        padding: dp(18)
+
+        # Balance card
+        GlassCard:
+            Label:
+                text: "My Balance"
+                font_size: dp(18)
+                color: 1,1,1,0.9
+                size_hint_y: None
+                height: dp(35)
+
+            Label:
+                id: balance_lbl
+                text: "$0.00"
+                font_size: dp(40)
+                bold: True
+                color: 1,1,1,1
+
+        # Buttons
+        BoxLayout:
+            size_hint_y: None
+            height: dp(70)
+            spacing: dp(12)
+            PrimaryButton:
+                text: "Add"
+                bg: (0,0.7,0.4,1)
+                on_release: app.open_amount_popup("Add")
+            PrimaryButton:
+                text: "Remove"
+                bg: (0.85,0.1,0.2,1)
+                on_release: app.open_amount_popup("Remove")
+
+        # Title + Filter
+        BoxLayout:
+            size_hint_y: None
+            height: dp(40)
+            spacing: dp(5)
+            Label:
+                text: "Transactions"
+                font_size: dp(18)
+                color: 1,1,1,1
+                bold: True
+            IconButton:
+                on_release: app.open_filter_popup()
+
+        # Logs
+        ScrollView:
+            do_scroll_x: False
+            bar_color: 0.4,0.2,1,1
+            bar_width: dp(8)
+            GridLayout:
+                id: logs_grid
+                cols: 1
+                size_hint_y: None
+                height: self.minimum_height
+                spacing: dp(10)
+                padding: dp(5), dp(5)
