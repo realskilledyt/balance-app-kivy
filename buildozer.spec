@@ -8,7 +8,7 @@ source.include_exts = py,kv,png,jpg,ttf,json
 
 version = 0.1
 
-requirements = python3, kivy, json
+requirements = python3, kivy
 
 orientation = portrait
 
@@ -31,3 +31,4 @@ icon.filename = %(source.dir)s/icon.png
 [buildozer]
 log_level = 2
 warn_on_root = 1
+
