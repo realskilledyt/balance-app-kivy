@@ -5,16 +5,13 @@ on:
 
 jobs:
   build:
-    strategy:
-      matrix:
-        os: [ubuntu-22.04]
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-22.04
 
     steps:
     - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Update & Install dependencies
+    - name: Install dependencies
       run: |
         sudo apt update
         sudo apt install -y \
@@ -22,18 +19,15 @@ jobs:
           build-essential libffi-dev libssl-dev zlib1g-dev \
           libgl1-mesa-dev libgles2-mesa-dev libegl1-mesa-dev \
           libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
-          libportmidi-dev libavformat-dev libavcodec-dev libswscale-dev
+          libportmidi-dev libavformat-dev libavcodec-dev libswscale-dev \
+          libopengl-dev mesa-common-dev
 
-        # Fallback for Ubuntu 24.04 if needed
-        sudo apt install -y libopengl-dev || true
-        sudo apt install -y mesa-common-dev || true
-
-    - name: Install buildozer & cython
+    - name: Install Buildozer & Cython
       run: |
         pip install --upgrade pip
         pip install buildozer Cython==0.29.33
 
-    - name: Install Android SDK cmdline tools
+    - name: Install Android SDK
       run: |
         mkdir -p $HOME/android-sdk/cmdline-tools
         cd $HOME/android-sdk/cmdline-tools
@@ -41,28 +35,35 @@ jobs:
         unzip -q commandlinetools-linux-9477386_latest.zip
         mv cmdline-tools latest
 
-    - name: Export ANDROID paths
+    - name: Set environment variables
       run: |
         echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
+        echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
         echo "PATH=$PATH:$HOME/android-sdk/cmdline-tools/latest/bin:$HOME/android-sdk/platform-tools" >> $GITHUB_ENV
 
-    - name: Install Android SDK packages
+    - name: Install SDK packages (includes aidl)
       run: |
         yes | sdkmanager --licenses || true
         sdkmanager --sdk_root=$HOME/android-sdk \
           "platform-tools" \
           "platforms;android-33" \
           "build-tools;33.0.2" \
-          "ndk;25.2.9519653"
+          "ndk;25.2.9519653" \
+          "cmdline-tools;latest"
+
+    - name: Copy SDK into Buildozer folder (to expose aidl)
+      run: |
+        mkdir -p ~/.buildozer/android/platform
+        cp -r $HOME/android-sdk ~/.buildozer/android/platform/android-sdk
 
     - name: Build APK
       env:
-        ANDROIDSDK: $HOME/android-sdk
-        ANDROIDNDK: $HOME/android-sdk/ndk/25.2.9519653
+        ANDROIDSDK: ~/.buildozer/android/platform/android-sdk
+        ANDROIDNDK: ~/.buildozer/android/platform/android-sdk/ndk/25.2.9519653
       run: |
         buildozer android debug --verbose
 
-    - name: Upload APK Artifact
+    - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: balanceapp
